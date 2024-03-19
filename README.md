@@ -1,2 +1,2 @@
 # ppGroup5MobileApp
-There are instructions for mobile app:
+There will be instructions for mobile app:
