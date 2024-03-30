@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import {
   StatusBar,
   StyleSheet,
@@ -106,7 +106,7 @@ export default function App() {
           component={MapScreen} 
           options={{
             headerShown: false,
-            navigationBarColor: '#0004',
+            navigationBarColor: '#000',
           }}
         />
       </Stack.Navigator>
@@ -125,7 +125,6 @@ const styles = StyleSheet.create({
   },
   containerMapScreen: {
     flex: 1,
-    backgroundColor: '#48f',
     justifyContent: 'center',
     alignItems: 'center',
   },
