@@ -10,10 +10,23 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import YaMap,{ Marker, Animation } from 'react-native-yamap';
 
+// temporarily
+const bgc = '#000000'
+const bg200c = '#161616'
+const bg300c = '#2c2c2c'
+const prc = '#FF00FF'
+const pr200c = '#ff63ff'
+const pr300c = '#ffd6ff'
+const acc = '#00FFFF'
+const ac200c = '#00999b'
+const txc = '#FFFFFF'
+const tx200c = '#e0e0e0'
+// temporarily
+
 const HomeScreen = ({navigation}) => {
   return (
     <View style={styles.containerHomeScreen} >
-      <StatusBar translucent={false} hidden={false} backgroundColor='#A5A5A5' />
+      <StatusBar translucent={false} hidden={false} backgroundColor={bg200c} />
       <TouchableOpacity 
         style={styles.toMapButton} 
         onPress={() => navigation.navigate('Map')}
@@ -46,7 +59,7 @@ const MapScreen = ({navigation}) => {
   const zoomMinus = async () => {
     const camera = await getCamera();
     if (camera != 'ERROR') {
-      this.mymap.current.setZoom(camera.zoom * 0.8, 0.5, Animation.SMOOTH)
+      this.mymap.current.setZoom(camera.zoom / 1.2, 0.5, Animation.SMOOTH)
     }
   }
   
@@ -59,6 +72,7 @@ const MapScreen = ({navigation}) => {
           style={styles.map}
           mapType='vector'
           showUserPosition={false}
+          nightMode={true}
           initialRegion={{
             lon: 42,
             lat: 43,
@@ -67,11 +81,21 @@ const MapScreen = ({navigation}) => {
             tilt: 0
           }}
         >
-          <Marker 
-            point={{lon: 42, lat: 43}}
-            onPress={() => zoomPlus()}
-          />
         </YaMap>
+        <View style={styles.containerPlusMinus}>
+          <TouchableOpacity 
+            style={styles.PlusMinusButton}
+            onPress={() => zoomPlus()}
+          >
+            <Text style={styles.PlusMinusButtonText}>+</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.PlusMinusButton}
+            onPress={() => zoomMinus()}
+          >
+            <Text style={styles.PlusMinusButtonText}>-</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </>
   )
@@ -91,14 +115,14 @@ export default function App() {
             title: 'Добро пожаловать',
             headerShown: true,
             headerStyle: {
-              backgroundColor: '#A5A5A5'
+              backgroundColor: bg200c
             },
             headerTitleStyle: {
               fontWeight: '300',
               fontSize: 24,
-              color: '#fff'
+              color: tx200c
             },
-            navigationBarColor: '#A5A5A5',
+            navigationBarColor: bg200c,
           }} 
         />
         <Stack.Screen 
@@ -106,7 +130,7 @@ export default function App() {
           component={MapScreen} 
           options={{
             headerShown: false,
-            navigationBarColor: '#000',
+            navigationBarColor: bg200c,
           }}
         />
       </Stack.Navigator>
@@ -117,34 +141,60 @@ export default function App() {
 const styles = StyleSheet.create({
   containerHomeScreen: {
     flex: 1,
-    backgroundColor: '#fff',
-    padding: 16,
+    backgroundColor: bgc,
     flexDirection: 'column',
     justifyContent: 'center',
     alignItems: 'center',
   },
   containerMapScreen: {
     flex: 1,
-    justifyContent: 'center',
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
     alignItems: 'center',
   },
   toMapButton: {
-    backgroundColor: '#6A5ACD',
-    height: 75,
-    width: 150,
+    backgroundColor: prc,
+    height: 80,
+    width: 180,
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2
+    borderColor: acc,
+    borderWidth: 2,
   },
   toMapButtonText: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: '300',
-    color: '#fff'
+    color: txc,
   },
   map: {
     flex: 1,
     width: '100%',
     height: '100%',
   },
+  containerPlusMinus: {
+    paddingRight: 8,
+    position: 'absolute',
+    height: 128,
+    width: 'auto',
+    flexDirection: 'column',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+
+  },
+  PlusMinusButton: {
+    backgroundColor: prc + 'cc',
+    height: 56,
+    width: 56,
+    borderRadius: 26,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderColor: acc,
+    borderWidth: 1.5,
+  },
+  PlusMinusButtonText: {
+    fontSize: 36,
+    fontWeight: '200',
+    color: txc,
+  }
 });
