@@ -1,10 +1,11 @@
-import React from 'react';
+import React, {useState} from 'react';
 import {
   StatusBar,
   StyleSheet,
   Text,
   View,
   TouchableOpacity,
+  TextInput,
 } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -24,9 +25,21 @@ const tx200c = '#e0e0e0'
 // temporarily
 
 const HomeScreen = ({navigation}) => {
+  const [tokenInputText, onChangeTokenInputText] = React.useState();
+  
   return (
     <View style={styles.containerHomeScreen} >
       <StatusBar translucent={false} hidden={false} backgroundColor={bg200c} />
+      <View style={styles.containerBgc1}>
+        <Text style={styles.containerBgc1Text}>Чтобы начать запись маршрута, введите уникальный код из своего личного кабинета на сайте</Text>
+      </View>
+      <TextInput
+        style={styles.tokenInput}
+        onChangeText={onChangeTokenInputText}
+        value={tokenInputText}
+        placeholder='ваш код'
+        placeholderTextColor={tx200c}
+      />
       <TouchableOpacity 
         style={styles.toMapButton} 
         onPress={() => navigation.navigate('Map')}
@@ -84,16 +97,16 @@ const MapScreen = ({navigation}) => {
         </YaMap>
         <View style={styles.containerPlusMinus}>
           <TouchableOpacity 
-            style={styles.PlusMinusButton}
+            style={styles.plusMinusButton}
             onPress={() => zoomPlus()}
           >
-            <Text style={styles.PlusMinusButtonText}>+</Text>
+            <Text style={styles.plusMinusButtonText}>+</Text>
           </TouchableOpacity>
           <TouchableOpacity 
-            style={styles.PlusMinusButton}
+            style={styles.plusMinusButton}
             onPress={() => zoomMinus()}
           >
-            <Text style={styles.PlusMinusButtonText}>-</Text>
+            <Text style={styles.plusMinusButtonText}>-</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -120,8 +133,8 @@ export default function App() {
             headerTitleStyle: {
               fontWeight: '300',
               fontSize: 24,
-              color: tx200c
             },
+            headerTintColor: tx200c,
             navigationBarColor: bg200c,
           }} 
         />
@@ -143,7 +156,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: bgc,
     flexDirection: 'column',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     alignItems: 'center',
   },
   containerMapScreen: {
@@ -152,15 +165,38 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     alignItems: 'center',
   },
+  containerBgc1: {
+    backgroundColor: bg300c,
+    height: 'auto',
+    width: '80%',
+    marginTop: '50%',
+    marginBottom: 10,
+    padding: '4%',
+    borderRadius: 20,
+  },
+  containerBgc1Text: {
+    fontSize: 20,
+    fontWeight: '200',
+    color: txc,
+    textAlign: 'center',
+  },
+  tokenInput: {
+    backgroundColor: bg300c,
+    height: 50,
+    width: '30%',
+    marginBottom: 10,
+    borderRadius: 20,
+    textAlign: 'center'
+  },
   toMapButton: {
     backgroundColor: prc,
-    height: 80,
-    width: 180,
+    height: '10%',
+    width: '42%',
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
     borderColor: acc,
-    borderWidth: 2,
+    borderWidth: 1.5,
   },
   toMapButtonText: {
     fontSize: 28,
@@ -182,7 +218,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
 
   },
-  PlusMinusButton: {
+  plusMinusButton: {
     backgroundColor: prc + 'cc',
     height: 56,
     width: 56,
@@ -192,7 +228,7 @@ const styles = StyleSheet.create({
     borderColor: acc,
     borderWidth: 1.5,
   },
-  PlusMinusButtonText: {
+  plusMinusButtonText: {
     fontSize: 36,
     fontWeight: '200',
     color: txc,
