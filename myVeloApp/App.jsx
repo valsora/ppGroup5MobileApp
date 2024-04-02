@@ -26,9 +26,9 @@ const tx200c = '#e0e0e0'
 // temporarily
 
 const HomeScreen = ({navigation}) => {
-  const [tokenInputText, onChangeTokenInputText] = React.useState('');
-  const [buttonColor, changeButtonColor] = React.useState(pr300c);
+  const [tokenInputText, changeTokenInputText] = React.useState('');
   const [buttonDisabled, changeDisabled] = React.useState(true);
+  const [buttonColor, changeButtonColor] = React.useState(pr300c);
   
   return (
     <View style={styles.containerHomeScreen}>
@@ -38,14 +38,14 @@ const HomeScreen = ({navigation}) => {
       </View>
       <TextInput
         style={styles.tokenInput}
-        onChangeText={onChangeTokenInputText}
-        onEndEditing={() => {
-          if (tokenInputText.length === 5) {
-            changeButtonColor(prc)
+        onChangeText={(text) => {
+          changeTokenInputText(text)
+          if (text.length === 5) {
             changeDisabled(false)
+            changeButtonColor(prc)
           } else {
-            changeButtonColor(pr300c)
             changeDisabled(true)
+            changeButtonColor(pr300c)
           }
         }}
         value={tokenInputText}
@@ -54,17 +54,20 @@ const HomeScreen = ({navigation}) => {
         keyboardType='numeric'
       />
       <TouchableOpacity 
-        style={styles.toMapButton} 
+        style={styles.toMapButton}
+        disabled={buttonDisabled}
         onPress={() => {
           const existingToken = '42424'
           //array of tokens from database
           if (tokenInputText === existingToken) {
             navigation.navigate('Map', {userToken: tokenInputText})
           } else {
-            Alert.alert('Ошибка', 'Данного кода не существует')
+            Alert.alert('Ошибка', 'Данного кода не существует');
+            changeTokenInputText('');
+            changeDisabled(true)
+            changeButtonColor(pr300c)
           }
         }}
-        disabled={buttonDisabled}
       >
         <View style={styles.toMapButtonView} backgroundColor={buttonColor}>
           <Text style={styles.toMapButtonText}>НАЧАТЬ</Text>
@@ -209,9 +212,11 @@ const styles = StyleSheet.create({
     backgroundColor: bg300c,
     height: 50,
     width: '42%',
-    marginBottom: 16,
+    marginBottom: 24,
     borderRadius: 20,
     textAlign: 'center',
+    fontSize: 18,
+    fontWeight: '200',
     color: txc,
   },
   toMapButton: {
