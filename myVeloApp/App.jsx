@@ -6,8 +6,9 @@ import {
   View,
   TouchableOpacity,
   TextInput,
+  Alert,
 } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, useTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import YaMap,{ Marker, Animation } from 'react-native-yamap';
 
@@ -25,10 +26,12 @@ const tx200c = '#e0e0e0'
 // temporarily
 
 const HomeScreen = ({navigation}) => {
-  const [tokenInputText, onChangeTokenInputText] = React.useState();
+  const [tokenInputText, onChangeTokenInputText] = React.useState('');
+  const [buttonColor, changeButtonColor] = React.useState(pr300c);
+  const [buttonDisabled, changeDisabled] = React.useState(true);
   
   return (
-    <View style={styles.containerHomeScreen} >
+    <View style={styles.containerHomeScreen}>
       <StatusBar translucent={false} hidden={false} backgroundColor={bg200c} />
       <View style={styles.containerBgc1}>
         <Text style={styles.containerBgc1Text}>Чтобы начать запись маршрута, введите уникальный код из своего личного кабинета на сайте</Text>
@@ -36,21 +39,41 @@ const HomeScreen = ({navigation}) => {
       <TextInput
         style={styles.tokenInput}
         onChangeText={onChangeTokenInputText}
+        onEndEditing={() => {
+          if (tokenInputText.length == 5) {
+            changeButtonColor(prc)
+            changeDisabled(false)
+          } else {
+            changeButtonColor(pr300c)
+            changeDisabled(true)
+          }
+        }}
         value={tokenInputText}
         placeholder='ваш код'
         placeholderTextColor={tx200c}
+        keyboardType='numeric'
       />
       <TouchableOpacity 
         style={styles.toMapButton} 
-        onPress={() => navigation.navigate('Map')}
+        onPress={() => {
+          const existingToken = '42424'
+          if (tokenInputText == existingToken) {
+            navigation.navigate('Map', {userToken: tokenInputText})
+          } else {
+            Alert.alert('Ошибка', 'Данного кода не существует')
+          }
+        }}
+        disabled={buttonDisabled}
       >
-        <Text style={styles.toMapButtonText}>К КАРТЕ</Text>
+        <View style={styles.toMapButtonView} backgroundColor={buttonColor}>
+          <Text style={styles.toMapButtonText}>НАЧАТЬ</Text>
+        </View>
       </TouchableOpacity>
     </View>
   )
 }
 
-const MapScreen = ({navigation}) => {
+const MapScreen = ({route, navigation}) => {
   mymap = React.createRef();
   const getCamera = () => {
     return new Promise((resolve, reject) => {
@@ -75,6 +98,7 @@ const MapScreen = ({navigation}) => {
       this.mymap.current.setZoom(camera.zoom / 1.2, 0.5, Animation.SMOOTH)
     }
   }
+  const {userToken} = route.params;
   
   return (
     <>
@@ -186,10 +210,10 @@ const styles = StyleSheet.create({
     width: '30%',
     marginBottom: 10,
     borderRadius: 20,
-    textAlign: 'center'
+    textAlign: 'center',
+    color: txc,
   },
   toMapButton: {
-    backgroundColor: prc,
     height: '10%',
     width: '42%',
     borderRadius: 10,
@@ -197,6 +221,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderColor: acc,
     borderWidth: 1.5,
+  },
+  toMapButtonView: {
+    height: '100%',
+    width: '100%',
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   toMapButtonText: {
     fontSize: 28,
