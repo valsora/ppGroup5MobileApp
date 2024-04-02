@@ -40,7 +40,7 @@ const HomeScreen = ({navigation}) => {
         style={styles.tokenInput}
         onChangeText={onChangeTokenInputText}
         onEndEditing={() => {
-          if (tokenInputText.length == 5) {
+          if (tokenInputText.length === 5) {
             changeButtonColor(prc)
             changeDisabled(false)
           } else {
@@ -57,6 +57,7 @@ const HomeScreen = ({navigation}) => {
         style={styles.toMapButton} 
         onPress={() => {
           const existingToken = '42424'
+          //array of tokens from database
           if (tokenInputText === existingToken) {
             navigation.navigate('Map', {userToken: tokenInputText})
           } else {
