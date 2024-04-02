@@ -8,7 +8,7 @@ import {
   TextInput,
   Alert,
 } from 'react-native';
-import { NavigationContainer, useTheme } from '@react-navigation/native';
+import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import YaMap,{ Marker, Animation } from 'react-native-yamap';
 
@@ -57,7 +57,7 @@ const HomeScreen = ({navigation}) => {
         style={styles.toMapButton} 
         onPress={() => {
           const existingToken = '42424'
-          if (tokenInputText == existingToken) {
+          if (tokenInputText === existingToken) {
             navigation.navigate('Map', {userToken: tokenInputText})
           } else {
             Alert.alert('Ошибка', 'Данного кода не существует')
@@ -194,7 +194,7 @@ const styles = StyleSheet.create({
     height: 'auto',
     width: '80%',
     marginTop: '50%',
-    marginBottom: 10,
+    marginBottom: 8,
     padding: '4%',
     borderRadius: 20,
   },
@@ -207,8 +207,8 @@ const styles = StyleSheet.create({
   tokenInput: {
     backgroundColor: bg300c,
     height: 50,
-    width: '30%',
-    marginBottom: 10,
+    width: '42%',
+    marginBottom: 16,
     borderRadius: 20,
     textAlign: 'center',
     color: txc,
