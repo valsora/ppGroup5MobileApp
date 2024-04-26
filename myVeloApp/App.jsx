@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   StatusBar,
   StyleSheet,
@@ -7,10 +7,12 @@ import {
   TouchableOpacity,
   TextInput,
   Alert,
+  PermissionsAndroid,
 } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import YaMap,{ Marker, Animation } from 'react-native-yamap';
+import Geolocation from 'react-native-geolocation-service';
 
 // temporarily
 const bgc = '#000000'
@@ -102,8 +104,43 @@ const MapScreen = ({route, navigation}) => {
       this.mymap.current.setZoom(camera.zoom / 1.2, 0.5, Animation.SMOOTH)
     }
   }
+  const requestLocPermission = async () => {
+    try {
+      const granted = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.ACCES_FINE_LOCATION,
+        {
+          title: 'Geolocation Permission',
+          message: 'Can we access your location?',
+          buttonNeutral: 'Ask Me Later',
+          buttonNegative: 'Cancel',
+          buttonPositive: 'OK',
+        },
+      );
+      if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+        console.log('You can use Geolocation');
+        return true;
+      } else {
+        console.log('You cannot use Geolocation');
+        return false;
+      }
+    } catch (err) {
+      console.warn(err);
+      return false;
+    }
+  }
   const {userToken} = route.params;
-  
+  const getLoc = () => {
+    Geolocation.getCurrentPosition(
+      (position) => {
+        console.log('position', position.coords)
+      },
+      (error) => {
+        console.log('error', error.code, error.message)
+      },
+      {enableHighAccuracy: true, timeout: 15000, maximumAge: 10000, distanceFilter: 50,}
+    );
+  }
+
   return (
     <>
       <StatusBar translucent={true} hidden={false} backgroundColor='#0004' />
@@ -126,7 +163,7 @@ const MapScreen = ({route, navigation}) => {
         <View style={styles.containerPlusMinus}>
           <TouchableOpacity 
             style={styles.plusMinusButton}
-            onPress={() => zoomPlus()}
+            onPress={() => getLoc()}
           >
             <Text style={styles.plusMinusButtonText}>+</Text>
           </TouchableOpacity>
