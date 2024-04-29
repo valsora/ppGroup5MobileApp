@@ -27,6 +27,20 @@ const txc = '#FFFFFF'
 const tx200c = '#e0e0e0'
 // temporarily
 
+const requestLocPermission = async () => {
+  try {
+    const isGranted = await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION);
+    if (isGranted === PermissionsAndroid.RESULTS.GRANTED) {
+      return true;
+    } else {
+      return false;
+    }
+  } catch (err) {
+    console.warn(err);
+    return false;
+  }
+}
+
 const HomeScreen = ({navigation}) => {
   const [tokenInputText, changeTokenInputText] = React.useState('');
   const [buttonDisabled, changeDisabled] = React.useState(true);
@@ -62,7 +76,11 @@ const HomeScreen = ({navigation}) => {
           const existingToken = '42424'
           //array of tokens from database
           if (tokenInputText === existingToken) {
-            navigation.navigate('Map', {userToken: tokenInputText})
+            const response = requestLocPermission().then(res => {
+              if (res) {
+                navigation.navigate('Map', {userToken: tokenInputText})
+              }
+            })
           } else {
             Alert.alert('Ошибка', 'Данного кода не существует');
             changeTokenInputText('');
@@ -104,38 +122,19 @@ const MapScreen = ({route, navigation}) => {
       this.mymap.current.setZoom(camera.zoom / 1.2, 0.5, Animation.SMOOTH)
     }
   }
-  const requestLocPermission = async () => {
-    try {
-      const isGranted = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-        {
-          title: 'Разрешение на доступ к геолокации',
-          message: 'Можем ли мы получить доступ к вашему местоположению?',
-          buttonNeutral: 'Спросить позже',
-          buttonNegative: 'Нет',
-          buttonPositive: 'Да',
-        },
-      );
-      if (isGranted === PermissionsAndroid.RESULTS.GRANTED) {
-        console.log('You can use Geolocation');
-        return true;
-      } else {
-        console.log('You cannot use Geolocation');
-        return false;
-      }
-    } catch (err) {
-      console.warn(err);
-      return false;
-    }
-  }
   const {userToken} = route.params;
   const [isRecordOn, changeIsRecordOn] = React.useState(false);
+  const [arrayOfCoords, changeArrayOfCoords] = useState([]);
   const getLoc = () => {
     const response = requestLocPermission().then(res => {
       if (res) {
         Geolocation.getCurrentPosition(
           (position) => {
             console.log('position', position)
+            const newArr = arrayOfCoords
+            newArr.push(position.coords)
+            changeArrayOfCoords(newArr)
+            console.log(arrayOfCoords)
           },
           (error) => {
             console.log('error', error.code, error.message)
@@ -180,7 +179,7 @@ const MapScreen = ({route, navigation}) => {
           ref={this.mymap}
           style={styles.map}
           mapType='vector'
-          showUserPosition={false}
+          showUserPosition={true}
           nightMode={true}
           initialRegion={{
             lon: 42,
