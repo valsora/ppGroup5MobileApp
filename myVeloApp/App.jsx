@@ -106,67 +106,71 @@ const MapScreen = ({route, navigation}) => {
   }
   const requestLocPermission = async () => {
     try {
-      const granted = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.ACCES_FINE_LOCATION,
+      const isGranted = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
         {
-          title: 'Geolocation Permission',
-          message: 'Can we access your location?',
-          buttonNeutral: 'Ask Me Later',
-          buttonNegative: 'Cancel',
-          buttonPositive: 'OK',
+          title: 'Разрешение на доступ к геолокации',
+          message: 'Можем ли мы получить доступ к вашему местоположению?',
+          buttonNeutral: 'Спросить позже',
+          buttonNegative: 'Нет',
+          buttonPositive: 'Да',
         },
       );
-      if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+      if (isGranted === PermissionsAndroid.RESULTS.GRANTED) {
         console.log('You can use Geolocation');
+        return true;
       } else {
         console.log('You cannot use Geolocation');
+        return false;
       }
     } catch (err) {
       console.warn(err);
+      return false;
     }
   }
   const {userToken} = route.params;
   const [isRecordOn, changeIsRecordOn] = React.useState(false);
   const getLoc = () => {
-    Geolocation.getCurrentPosition(
-      (position) => {
-        console.log('position', position.coords)
-      },
-      (error) => {
-        console.log('error', error.code, error.message)
-      },
-      {enableHighAccuracy: true, timeout: 15000, maximumAge: 10000, distanceFilter: 50,}
-    );
-  }
-  React.useEffect(
-    () =>
-      navigation.addListener('beforeRemove', (e) => {
-        if (!isRecordOn) {
-          return;
-        }
-        e.preventDefault();
-        Alert.alert(
-          'Прервать запись?',
-          'Уверены, что хотите выйти? Запись маршрута будет завершена, а данные не сохранятся',
-          [
-            {
-                text: 'Остаться',
-                style: 'cancel',
-                onPress: () => {},
-            },
-            {
-                text: 'Выйти',
-                style: 'destructive',
-                onPress: () => 
-                    navigation.dispatch(
-                        e.data.action
-                    ),
-            },
-          ]
+    const response = requestLocPermission().then(res => {
+      if (res) {
+        Geolocation.getCurrentPosition(
+          (position) => {
+            console.log('position', position)
+          },
+          (error) => {
+            console.log('error', error.code, error.message)
+          },
+          {enableHighAccuracy: true, timeout: 15000, maximumAge: 10000, distanceFilter: 10,}
         );
-      }),
-    [navigation]
-  );
+      }
+    })
+  }
+  useEffect(() => {
+    navigation.addListener('beforeRemove', (e) => {
+      if (isRecordOn) { //return ! before isRecordOn for correct logic (! is missed for tests)
+        return;
+      }
+      e.preventDefault();
+      Alert.alert(
+        'Прервать запись?',
+        'Уверены, что хотите выйти? Запись маршрута будет завершена, а данные не сохранятся',
+        [
+          {
+            text: 'Остаться',
+            style: 'cancel',
+            onPress: () => {},
+          },
+          {
+            text: 'Выйти',
+            style: 'destructive',
+            onPress: () => {
+              navigation.dispatch(e.data.action)
+            },
+          },
+        ]
+      );
+    });
+  }, [navigation]);
 
   return (
     <>
@@ -190,7 +194,7 @@ const MapScreen = ({route, navigation}) => {
         <View style={styles.containerPlusMinus}>
           <TouchableOpacity 
             style={styles.plusMinusButton}
-            onPress={() => zoomPlus()}
+            onPress={() => getLoc()}
           >
             <Text style={styles.plusMinusButtonText}>+</Text>
           </TouchableOpacity>
