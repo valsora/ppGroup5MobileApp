@@ -79,6 +79,8 @@ const HomeScreen = ({navigation}) => {
             const response = requestLocPermission().then(res => {
               if (res) {
                 navigation.navigate('Map', {userToken: tokenInputText})
+              } else {
+                Alert.alert('Нет разрешения на использование локации', 'Пожалуйста, в настройках предоставьте приложению доступ к местоположению устройства');
               }
             })
           } else {
@@ -123,16 +125,34 @@ const MapScreen = ({route, navigation}) => {
     }
   }
   const {userToken} = route.params;
-  const [isRecordOn, changeIsRecordOn] = React.useState(false);
+  const [isRecordOn, changeIsRecordOn] = useState(-1);
+  const [currentTime, setCurrentTime] = useState(0);
+  useEffect(() => {
+    let timerInterval;
+    if (isRecordOn === 1) {
+      timerInterval = setInterval(() => {
+        setCurrentTime((t) => t + 1);
+        if (currentTime % 5 === 0) { // problems with usestate vars
+          getLoc();
+        }
+      }, 1000)
+    } else {
+      clearInterval(timerInterval)
+      if (isRecordOn === -1) {
+        setCurrentTime(0);
+        changeArrayOfCoords([]);
+      }
+    }
+    return () => {clearInterval(timerInterval)}
+  }, [isRecordOn]);
   const [arrayOfCoords, changeArrayOfCoords] = useState([]);
   const getLoc = () => {
     const response = requestLocPermission().then(res => {
       if (res) {
         Geolocation.getCurrentPosition(
           (position) => {
-            console.log('position', position)
             const newArr = arrayOfCoords
-            newArr.push(position.coords)
+            newArr.push(position.coords.latitude)
             changeArrayOfCoords(newArr)
             console.log(arrayOfCoords)
           },
@@ -146,7 +166,7 @@ const MapScreen = ({route, navigation}) => {
   }
   useEffect(() => {
     navigation.addListener('beforeRemove', (e) => {
-      if (isRecordOn) { //return ! before isRecordOn for correct logic (! is missed for tests)
+      if (isRecordOn === -1) { // same problem with vars
         return;
       }
       e.preventDefault();
@@ -193,15 +213,15 @@ const MapScreen = ({route, navigation}) => {
         <View style={styles.containerPlusMinus}>
           <TouchableOpacity 
             style={styles.plusMinusButton}
-            onPress={() => getLoc()}
+            onPress={() => {changeIsRecordOn(1)}} // zoomPlus()
           >
-            <Text style={styles.plusMinusButtonText}>+</Text>
+            <Text style={styles.plusMinusButtonText}>{currentTime}</Text>
           </TouchableOpacity>
           <TouchableOpacity 
             style={styles.plusMinusButton}
-            onPress={() => zoomMinus()}
+            onPress={() => {changeIsRecordOn(-1)}} //zoomMinus()
           >
-            <Text style={styles.plusMinusButtonText}>-</Text>
+            <Text style={styles.plusMinusButtonText}>{isRecordOn}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -265,7 +285,7 @@ const styles = StyleSheet.create({
     height: 'auto',
     width: '80%',
     marginTop: '50%',
-    marginBottom: 8,
+    marginBottom: 16,
     padding: '4%',
     borderRadius: 20,
   },
