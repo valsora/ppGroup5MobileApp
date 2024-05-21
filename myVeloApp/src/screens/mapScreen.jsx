@@ -7,7 +7,7 @@ import {
     StyleSheet,
     Alert,
 } from 'react-native';
-import YaMap,{ Animation } from 'react-native-yamap';
+import YaMap, { Animation, Polyline } from 'react-native-yamap';
 import Geolocation from 'react-native-geolocation-service';
 import requestLocPermission from '../common/requestLocationPermission';
 import { colors } from '../resources/colors';
@@ -50,6 +50,33 @@ const MapScreen = ({route, navigation}) => {
     const stopRecord = () => {
       changeIsRecordOn(-1);
       setStartButtonText('СТАРТ')
+      postCoords(userToken, currentTime, arrayOfCoords).then((response) => {
+        const status = response.status;
+        if (status === 200) {
+          Alert.alert('Запись завершена', 'Ваш маршрут сохранен')
+        } else {
+          Alert.alert('Ошибка', 'Проблемы с сервером')
+        }
+      });
+    }
+    const postCoords = async (tokenMobile, travelTime, arrOfCoords) => { // move to common
+      try {
+        const response = await fetch('http://10.147.17.88:8000/route/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            token_mobile: tokenMobile,
+            users_travel_time: travelTime,
+            latitude_longitude: arrOfCoords,
+          })
+        });
+        console.log(response);
+        return response;
+      }
+      catch (error) {
+        console.log(error)
+        Alert.alert('Ошибка', 'Проблемы с сервером');
+      }
     }
     const [currentTime, setCurrentTime] = useState(0);
     const [startButtonText, setStartButtonText] = useState('СТАРТ');
@@ -58,7 +85,7 @@ const MapScreen = ({route, navigation}) => {
         const hours = ('0' + Math.floor(currentTime / 3600000)).slice(-2);
         const min = ('0' + Math.floor(currentTime / 60000) % 60).slice(-2);
         const sec = ('0' + Math.floor(currentTime / 1000) % 60).slice(-2);
-        setStartButtonText(min + ':' + sec);
+        setStartButtonText(hours + ':' + min + ':' + sec);
         if (currentTime % 5000 === 0) {
           getLoc();
         }
@@ -75,20 +102,30 @@ const MapScreen = ({route, navigation}) => {
         if (isRecordOn === -1) {
           setCurrentTime(0);
           changeArrayOfCoords([]);
+          addCoordToPolyline([]);
         }
       }
       return () => {clearInterval(timerInterval)}
     }, [isRecordOn]);
     const [arrayOfCoords, changeArrayOfCoords] = useState([]);
+    const [forPolyline, addCoordToPolyline] = useState([]);
+    class Coord {
+      lat
+      lon
+      constructor (latitude, longitude) {
+        this.lat = latitude
+        this.lon = longitude
+    }
+    }
     const getLoc = () => {
       const response = requestLocPermission().then(res => {
         if (res) {
           Geolocation.getCurrentPosition(
             (position) => {
-                const newArr = arrayOfCoords
-                newArr.push(position.coords.latitude)
-                changeArrayOfCoords(newArr)
-                console.log(arrayOfCoords)
+                changeArrayOfCoords(arr => [...arr, [position.coords.latitude, position.coords.longitude]]);
+                addCoordToPolyline(arr => [...arr, new Coord(position.coords.latitude, position.coords.longitude)]);
+                console.log(arrayOfCoords);
+                console.log(forPolyline);
             },
             (error) => {
                 console.log('error', error.code, error.message)
@@ -132,6 +169,7 @@ const MapScreen = ({route, navigation}) => {
               style={styles.map}
               mapType='vector'
               showUserPosition={true}
+              userLocationAccuracyFillColor={colors.pr300c + 'aa'}
               nightMode={true}
               initialRegion={{
                 lon: 42,
@@ -141,6 +179,13 @@ const MapScreen = ({route, navigation}) => {
                 tilt: 0
               }}
             >
+              <Polyline
+                points={forPolyline}
+                strokeColor={colors.acc}
+                strokeWidth={1.5}
+                outlineColor={colors.prc}
+                outlineWidth={1}
+              />
             </YaMap>
             <View style={styles.containerPlusMinus}>
               <TouchableOpacity 
@@ -160,6 +205,7 @@ const MapScreen = ({route, navigation}) => {
           <View style={styles.belowMapContainer}>
             <TouchableOpacity 
               style={styles.startButton}
+              disabled={isRecordOn!==-1}
               onPress={() => {startRecord()}}
             >
               <Text style={styles.belowMapButtonsText}>{startButtonText}</Text>

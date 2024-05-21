@@ -15,6 +15,19 @@ const HomeScreen = ({navigation}) => {
   const [tokenInputText, changeTokenInputText] = useState('');
   const [buttonDisabled, changeDisabled] = useState(true);
   const [buttonColor, changeButtonColor] = useState(colors.pr300c);
+
+  const getTokenCheckout = async (token) => { // move to common
+    try {
+      const response = await fetch('http://10.147.17.88:8000/token_mobile/' + token);
+      const data = await response.json(); //use data if i will make greetings etc using personal data
+      console.log(response)
+      return response
+    }
+    catch (error) {
+      console.log(error)
+      Alert.alert('Ошибка', 'Проблемы с сервером');
+    }
+  }
     
   return (
     <View style={styles.containerHomeScreen}>
@@ -26,7 +39,7 @@ const HomeScreen = ({navigation}) => {
         style={styles.tokenInput}
         onChangeText={(text) => {
           changeTokenInputText(text)
-          if (text.length === 5) {
+          if (text.length === 10) {
             changeDisabled(false)
             changeButtonColor(colors.prc)
           } else {
@@ -43,22 +56,27 @@ const HomeScreen = ({navigation}) => {
         style={styles.toMapButton}
         disabled={buttonDisabled}
         onPress={() => {
-          const existingToken = '42424'
-          //array of tokens from database
-          if (tokenInputText === existingToken) {
-            const response = requestLocPermission().then(res => {
-              if (res) {
-                navigation.navigate('Map', {userToken: tokenInputText})
+          getTokenCheckout(tokenInputText).then((response) => {
+            const statusCode = response.status;
+            if (statusCode === 200) {
+              const response = requestLocPermission().then((res) => {
+                if (res) {
+                  navigation.navigate('Map', {userToken: tokenInputText})
+                } else {
+                  Alert.alert('Нет разрешения на использование локации', 'Пожалуйста, в настройках предоставьте приложению доступ к местоположению устройства');
+                }
+              })
+            } else {
+              if (statusCode === 404) {
+                Alert.alert('Ошибка', 'Данного кода не существует');
               } else {
-                Alert.alert('Нет разрешения на использование локации', 'Пожалуйста, в настройках предоставьте приложению доступ к местоположению устройства');
+                Alert.alert('Ошибка', 'Проблемы с сервером');
               }
-            })
-          } else {
-            Alert.alert('Ошибка', 'Данного кода не существует');
-            changeTokenInputText('');
-            changeDisabled(true)
-            changeButtonColor(colors.pr300c)
-          }
+              changeTokenInputText('');
+              changeDisabled(true)
+              changeButtonColor(colors.pr300c)
+            }
+          })
         }}
       >
         <View style={styles.toMapButtonView} backgroundColor={buttonColor}>
