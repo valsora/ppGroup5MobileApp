@@ -29,13 +29,13 @@ const MapScreen = ({route, navigation}) => {
     }
     const zoomPlus = async () => {
       const camera = await getCamera();
-      if (camera != 'ERROR') {
+      if (camera !== 'ERROR') {
         this.mymap.current.setZoom(camera.zoom * 1.2, 0.5, Animation.SMOOTH)
       }
     }
     const zoomMinus = async () => {
       const camera = await getCamera();
-      if (camera != 'ERROR') {
+      if (camera !== 'ERROR') {
         this.mymap.current.setZoom(camera.zoom / 1.2, 0.5, Animation.SMOOTH)
       }
     }
@@ -49,7 +49,6 @@ const MapScreen = ({route, navigation}) => {
     }
     const stopRecord = () => {
       changeIsRecordOn(-1);
-      setStartButtonText('СТАРТ')
       postCoords(userToken, currentTime, arrayOfCoords).then((response) => {
         const status = response.status;
         if (status === 200) {
@@ -74,7 +73,7 @@ const MapScreen = ({route, navigation}) => {
         return response;
       }
       catch (error) {
-        console.log(error)
+        console.error(error)
         Alert.alert('Ошибка', 'Проблемы с сервером');
       }
     }

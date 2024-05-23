@@ -8,8 +8,8 @@ const requestLocPermission = async () => {
       } else {
         return false;
       }
-    } catch (err) {
-      console.warn(err);
+    } catch (error) {
+      console.log(error);
       return false;
     }
 }
