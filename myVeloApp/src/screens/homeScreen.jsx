@@ -53,6 +53,7 @@ const HomeScreen = ({navigation}) => {
         style={styles.toMapButton}
         disabled={buttonDisabled}
         onPress={() => {
+          navigation.navigate('Map', {userToken: tokenInputText}); //temp
           getIfTokenExists(tokenInputText).then((respStatus) => {
             if (respStatus === 'ERROR') {
               Alert.alert('Ошибка', 'Нет доступа к серверу');

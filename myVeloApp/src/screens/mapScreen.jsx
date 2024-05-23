@@ -14,7 +14,7 @@ import { colors } from '../resources/colors';
 
 
 const MapScreen = ({route, navigation}) => {
-  const {userToken} = route.params;
+    const {userToken} = route.params;
     YaMap.init('8f655fe3-2522-4a4b-8212-616ec8071856');
     mymap = React.createRef();
     const getCamera = () => {
@@ -42,13 +42,17 @@ const MapScreen = ({route, navigation}) => {
     }
     const [isRecordOn, changeIsRecordOn] = useState(-1);
     const startRecord = () => {
-      changeIsRecordOn(1);
+      if (currentTime === 0) {
+        changeIsRecordOn(1);
+      }
     }
     const pauseRecord = () => {
       changeIsRecordOn(isRecordOn===0?1:0);
     }
     const stopRecord = () => {
       changeIsRecordOn(-1);
+      setPauseButtonText('ПОЕЗДКА');
+      setStopButtonText('ЗАВЕРШЕНА');
       postCoordsToDB(userToken, currentTime, arrayOfCoords).then((respStatus) => {
         if (respStatus === 'ERROR') {
           Alert.alert('Ошибка', 'Нет доступа к серверу');
@@ -80,13 +84,15 @@ const MapScreen = ({route, navigation}) => {
     }
     const [currentTime, setCurrentTime] = useState(0);
     const [startButtonText, setStartButtonText] = useState('СТАРТ');
+    const [pauseButtonText, setPauseButtonText] = useState('ПАУЗА');
+    const [stopButtonText, setStopButtonText] = useState('СТОП');
     useEffect(() => {
       if (currentTime !== 0) {
         const hours = ('0' + Math.floor(currentTime / 3600000)).slice(-2);
         const min = ('0' + Math.floor(currentTime / 60000) % 60).slice(-2);
         const sec = ('0' + Math.floor(currentTime / 1000) % 60).slice(-2);
         setStartButtonText(hours + ':' + min + ':' + sec);
-        if (currentTime % 5000 === 0) {
+        if (currentTime % 2000 === 0) {
           getLoc();
         }
       }
@@ -94,21 +100,18 @@ const MapScreen = ({route, navigation}) => {
     useEffect(() => {
       let timerInterval;
       if (isRecordOn === 1) {
+        setPauseButtonText('ПАУЗА')
         timerInterval = setInterval(() => {
           setCurrentTime((t) => t + 100);
         }, 100)
       } else {
         clearInterval(timerInterval)
-        if (isRecordOn === -1) {
-          setCurrentTime(0);
-          changeArrayOfCoords([]);
-          addCoordToPolyline([]);
-        }
+        if (isRecordOn === 0) setPauseButtonText('ПРОДОЛЖИТЬ');
       }
       return () => {clearInterval(timerInterval)}
     }, [isRecordOn]);
     const [arrayOfCoords, changeArrayOfCoords] = useState([]);
-    const [forPolyline, addCoordToPolyline] = useState([]);
+    const [forPolyline, changeCoordsForPolyline] = useState([]);
     class Coord {
       lat
       lon
@@ -123,41 +126,41 @@ const MapScreen = ({route, navigation}) => {
           Geolocation.getCurrentPosition(
             (position) => {
                 changeArrayOfCoords(arr => [...arr, [position.coords.latitude, position.coords.longitude]]);
-                addCoordToPolyline(arr => [...arr, new Coord(position.coords.latitude, position.coords.longitude)]);
+                changeCoordsForPolyline(arr => [...arr, new Coord(position.coords.latitude, position.coords.longitude)]);
                 console.log(arrayOfCoords);
                 console.log(forPolyline);
             },
             (error) => {
                 console.log('error', error.code, error.message)
             },
-            {enableHighAccuracy: true, timeout: 15000, maximumAge: 10000, distanceFilter: 10,}
+            {enableHighAccuracy: true, timeout: 15000, maximumAge: 10000, distanceFilter: 10,},
           );
         }
       })
     }
-    useEffect(() => { //replace it later
-      navigation.addListener('beforeRemove', (e) => {
-        e.preventDefault();
-        Alert.alert(
-          'Закрыть карту?',
-          'Уверены, что хотите выйти? Если вы начали запись маршрута, то она будет завершена, и данные не сохранятся',
-          [
-            {
-              text: 'Остаться',
-              style: 'cancel',
-              onPress: () => {},
-            },
-            {
-              text: 'Выйти',
-              style: 'destructive',
-              onPress: () => {
-                navigation.dispatch(e.data.action)
-              },
-            },
-          ]
-        );
-      });
-    }, [navigation]);
+    // useEffect(() => { //replace it later
+    //   navigation.addListener('beforeRemove', (e) => {
+    //     e.preventDefault();
+    //     Alert.alert(
+    //       'Закрыть карту?',
+    //       'Уверены, что хотите выйти? Если вы начали запись маршрута, то она будет завершена, и данные не сохранятся',
+    //       [
+    //         {
+    //           text: 'Остаться',
+    //           style: 'cancel',
+    //           onPress: () => {},
+    //         },
+    //         {
+    //           text: 'Выйти',
+    //           style: 'destructive',
+    //           onPress: () => {
+    //             navigation.dispatch(e.data.action)
+    //           },
+    //         },
+    //       ]
+    //     );
+    //   });
+    // }, [navigation]);
   
     return (
       <>
@@ -216,7 +219,7 @@ const MapScreen = ({route, navigation}) => {
                 disabled={isRecordOn === -1}
                 onPress={() => {pauseRecord()}}
               >
-                <Text style={styles.belowMapButtonsText}>ПАУЗА</Text>
+                <Text style={styles.belowMapButtonsText}>{pauseButtonText}</Text>
               </TouchableOpacity>
               <TouchableOpacity 
                 style={styles.stopButton}
@@ -224,7 +227,7 @@ const MapScreen = ({route, navigation}) => {
                 onLongPress={() => {stopRecord()}}
                 delayLongPress={700}
               >
-                <Text style={styles.belowMapButtonsText}>СТОП</Text>
+                <Text style={styles.belowMapButtonsText}>{stopButtonText}</Text>
               </TouchableOpacity>
             </View>
           </View>
