@@ -14,6 +14,7 @@ import { colors } from '../resources/colors';
 
 
 const MapScreen = ({route, navigation}) => {
+  const {userToken} = route.params;
     YaMap.init('8f655fe3-2522-4a4b-8212-616ec8071856');
     mymap = React.createRef();
     const getCamera = () => {
@@ -39,7 +40,6 @@ const MapScreen = ({route, navigation}) => {
         this.mymap.current.setZoom(camera.zoom / 1.2, 0.5, Animation.SMOOTH)
       }
     }
-    const {userToken} = route.params;
     const [isRecordOn, changeIsRecordOn] = useState(-1);
     const startRecord = () => {
       changeIsRecordOn(1);
@@ -49,16 +49,19 @@ const MapScreen = ({route, navigation}) => {
     }
     const stopRecord = () => {
       changeIsRecordOn(-1);
-      postCoords(userToken, currentTime, arrayOfCoords).then((response) => {
-        const status = response.status;
-        if (status === 200) {
-          Alert.alert('Запись завершена', 'Ваш маршрут сохранен')
+      postCoordsToDB(userToken, currentTime, arrayOfCoords).then((respStatus) => {
+        if (respStatus === 'ERROR') {
+          Alert.alert('Ошибка', 'Нет доступа к серверу');
         } else {
-          Alert.alert('Ошибка', 'Проблемы с сервером')
+          if (respStatus === 200) {
+            Alert.alert('Запись завершена', 'Ваш маршрут сохранен');
+          } else {
+            Alert.alert('Запись завершена', 'Проблемы с сохранением маршрута');
+          }
         }
       });
     }
-    const postCoords = async (tokenMobile, travelTime, arrOfCoords) => { // move to common
+    const postCoordsToDB = async (tokenMobile, travelTime, arrOfCoords) => { // move to common
       try {
         const response = await fetch('http://10.147.17.88:8000/route/', {
           method: 'POST',
@@ -67,14 +70,12 @@ const MapScreen = ({route, navigation}) => {
             token_mobile: tokenMobile,
             users_travel_time: travelTime,
             latitude_longitude: arrOfCoords,
-          })
+          }),
         });
-        console.log(response);
-        return response;
-      }
-      catch (error) {
-        console.error(error)
-        Alert.alert('Ошибка', 'Проблемы с сервером');
+        return response.status;
+      } catch (error) {
+        console.error(error);
+        return 'ERROR';
       }
     }
     const [currentTime, setCurrentTime] = useState(0);
@@ -112,13 +113,13 @@ const MapScreen = ({route, navigation}) => {
       lat
       lon
       constructor (latitude, longitude) {
-        this.lat = latitude
-        this.lon = longitude
-    }
+        this.lat = latitude;
+        this.lon = longitude;
+      }
     }
     const getLoc = () => {
-      const response = requestLocPermission().then(res => {
-        if (res) {
+      requestLocPermission().then(permission => {
+        if (permission) {
           Geolocation.getCurrentPosition(
             (position) => {
                 changeArrayOfCoords(arr => [...arr, [position.coords.latitude, position.coords.longitude]]);
@@ -204,7 +205,7 @@ const MapScreen = ({route, navigation}) => {
           <View style={styles.belowMapContainer}>
             <TouchableOpacity 
               style={styles.startButton}
-              disabled={isRecordOn!==-1}
+              disabled={isRecordOn !== -1}
               onPress={() => {startRecord()}}
             >
               <Text style={styles.belowMapButtonsText}>{startButtonText}</Text>
@@ -212,14 +213,14 @@ const MapScreen = ({route, navigation}) => {
             <View style={styles.pauseStopContainer}>
               <TouchableOpacity 
                 style={styles.pauseButton}
-                disabled={isRecordOn===-1}
+                disabled={isRecordOn === -1}
                 onPress={() => {pauseRecord()}}
               >
                 <Text style={styles.belowMapButtonsText}>ПАУЗА</Text>
               </TouchableOpacity>
               <TouchableOpacity 
                 style={styles.stopButton}
-                disabled={isRecordOn===-1}
+                disabled={isRecordOn === -1}
                 onLongPress={() => {stopRecord()}}
                 delayLongPress={700}
               >
