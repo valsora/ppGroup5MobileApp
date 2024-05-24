@@ -53,7 +53,6 @@ const HomeScreen = ({navigation}) => {
         style={styles.toMapButton}
         disabled={buttonDisabled}
         onPress={() => {
-          navigation.navigate('Map', {userToken: tokenInputText}); //temp
           getIfTokenExists(tokenInputText).then((respStatus) => {
             if (respStatus === 'ERROR') {
               Alert.alert('Ошибка', 'Нет доступа к серверу');
@@ -68,7 +67,7 @@ const HomeScreen = ({navigation}) => {
                 })
               } else {
                 if (respStatus === 404) {
-                  Alert.alert('Ошибка', 'Данного кода не существует');
+                  Alert.alert('Ошибка', 'Такого кода не существует');
                 } else {
                   Alert.alert('Ошибка', 'Проблемы с сервером');
                 }

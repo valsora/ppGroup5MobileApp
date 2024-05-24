@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
     View,
     StatusBar,
@@ -9,36 +9,26 @@ import {
 } from 'react-native';
 import YaMap, { Animation, Polyline } from 'react-native-yamap';
 import Geolocation from 'react-native-geolocation-service';
-import requestLocPermission from '../common/requestLocationPermission';
 import { colors } from '../resources/colors';
 
 
 const MapScreen = ({route, navigation}) => {
     const {userToken} = route.params;
     YaMap.init('8f655fe3-2522-4a4b-8212-616ec8071856');
-    mymap = React.createRef();
-    const getCamera = () => {
-      return new Promise((resolve, reject) => {
-        if (this.mymap.current) {
-          this.mymap.current.getCameraPosition((position) => {
-            resolve(position)
-          })
-        } else {
-          reject('ERROR')
+    const mymap = useRef(null);
+    const zoomPlus = () => {
+      mymap.current.getCameraPosition((position) => {
+        if (mymap) {
+          mymap.current.setZoom(position.zoom * 1.2, 0.5, Animation.SMOOTH);
         }
       })
     }
-    const zoomPlus = async () => {
-      const camera = await getCamera();
-      if (camera !== 'ERROR') {
-        this.mymap.current.setZoom(camera.zoom * 1.2, 0.5, Animation.SMOOTH)
-      }
-    }
-    const zoomMinus = async () => {
-      const camera = await getCamera();
-      if (camera !== 'ERROR') {
-        this.mymap.current.setZoom(camera.zoom / 1.2, 0.5, Animation.SMOOTH)
-      }
+    const zoomMinus = () => {
+      mymap.current.getCameraPosition((position) => {
+        if (mymap) {
+          mymap.current.setZoom(position.zoom / 1.2, 0.5, Animation.SMOOTH);
+        }
+      })
     }
     const [isRecordOn, changeIsRecordOn] = useState(-1);
     const startRecord = () => {
@@ -92,9 +82,7 @@ const MapScreen = ({route, navigation}) => {
         const min = ('0' + Math.floor(currentTime / 60000) % 60).slice(-2);
         const sec = ('0' + Math.floor(currentTime / 1000) % 60).slice(-2);
         setStartButtonText(hours + ':' + min + ':' + sec);
-        if (currentTime % 2000 === 0) {
-          getLoc();
-        }
+        if (currentTime % 2000 === 0) addCoord();
       }
     }, [currentTime])
     useEffect(() => {
@@ -120,24 +108,31 @@ const MapScreen = ({route, navigation}) => {
         this.lon = longitude;
       }
     }
-    const getLoc = () => {
-      requestLocPermission().then(permission => {
-        if (permission) {
-          Geolocation.getCurrentPosition(
-            (position) => {
-                changeArrayOfCoords(arr => [...arr, [position.coords.latitude, position.coords.longitude]]);
-                changeCoordsForPolyline(arr => [...arr, new Coord(position.coords.latitude, position.coords.longitude)]);
-                console.log(arrayOfCoords);
-                console.log(forPolyline);
-            },
-            (error) => {
-                console.log('error', error.code, error.message)
-            },
-            {enableHighAccuracy: true, timeout: 15000, maximumAge: 10000, distanceFilter: 10,},
-          );
-        }
-      })
+    const addCoord = () => {
+      Geolocation.getCurrentPosition(
+        (position) => {
+            changeArrayOfCoords(arr => [...arr, [position.coords.latitude, position.coords.longitude]]);
+            changeCoordsForPolyline(arr => [...arr, new Coord(position.coords.latitude, position.coords.longitude)]);
+            console.log(arrayOfCoords);
+            console.log(forPolyline);
+        },
+        (error) => {
+            console.error(error);
+        },
+        {enableHighAccuracy: true, timeout: 15000, maximumAge: 10000, distanceFilter: 20,}
+      );
     }
+    useEffect(() => {
+      Geolocation.getCurrentPosition(
+        (position) => {
+          mymap.current.setCenter(new Coord(position.coords.latitude, position.coords.longitude), 16, 0, 0, 0, Animation.SMOOTH);
+        },
+        (error) => {
+          console.error(error);
+        },
+        {enableHighAccuracy: true, timeout: 15000, maximumAge: 10000, distanceFilter: 20,}
+      );
+    }, []);
     // useEffect(() => { //replace it later
     //   navigation.addListener('beforeRemove', (e) => {
     //     e.preventDefault();
@@ -168,7 +163,7 @@ const MapScreen = ({route, navigation}) => {
         <View style={styles.containerMapScreen}>
           <View style={styles.mapContainer}>
             <YaMap
-              ref={this.mymap}
+              ref={mymap}
               style={styles.map}
               mapType='vector'
               showUserPosition={true}
