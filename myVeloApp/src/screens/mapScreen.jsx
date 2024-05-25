@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     View,
     StatusBar,
@@ -15,19 +15,14 @@ import { colors } from '../resources/colors';
 const MapScreen = ({route, navigation}) => {
     const {userToken} = route.params;
     YaMap.init('8f655fe3-2522-4a4b-8212-616ec8071856');
-    const mymap = useRef(null);
     const zoomPlus = () => {
-      mymap.current.getCameraPosition((position) => {
-        if (mymap) {
-          mymap.current.setZoom(position.zoom * 1.2, 0.5, Animation.SMOOTH);
-        }
+      this.mymap.getCameraPosition((position) => {
+        this.mymap.setZoom(position.zoom * 1.2, 0.5, Animation.SMOOTH);
       })
     }
     const zoomMinus = () => {
-      mymap.current.getCameraPosition((position) => {
-        if (mymap) {
-          mymap.current.setZoom(position.zoom / 1.2, 0.5, Animation.SMOOTH);
-        }
+      this.mymap.getCameraPosition((position) => {
+        this.mymap.setZoom(position.zoom / 1.2, 0.5, Animation.SMOOTH);
       })
     }
     const [isRecordOn, changeIsRecordOn] = useState(-1);
@@ -122,17 +117,18 @@ const MapScreen = ({route, navigation}) => {
         {enableHighAccuracy: true, timeout: 15000, maximumAge: 10000, distanceFilter: 20,}
       );
     }
-    useEffect(() => {
+    const findMeOnMap = () => {
       Geolocation.getCurrentPosition(
         (position) => {
-          mymap.current.setCenter(new Coord(position.coords.latitude, position.coords.longitude), 16, 0, 0, 0, Animation.SMOOTH);
+          this.mymap.setCenter(new Coord(position.coords.latitude, position.coords.longitude), 16, 0, 0, 0, Animation.SMOOTH);
         },
         (error) => {
           console.error(error);
         },
         {enableHighAccuracy: true, timeout: 15000, maximumAge: 10000, distanceFilter: 20,}
       );
-    }, []);
+    }
+    useEffect(() => {findMeOnMap()}, []);
     // useEffect(() => { //replace it later
     //   navigation.addListener('beforeRemove', (e) => {
     //     e.preventDefault();
@@ -163,7 +159,9 @@ const MapScreen = ({route, navigation}) => {
         <View style={styles.containerMapScreen}>
           <View style={styles.mapContainer}>
             <YaMap
-              ref={mymap}
+              ref={YaMap => {
+                this.mymap = YaMap;
+              }}
               style={styles.map}
               mapType='vector'
               showUserPosition={true}
@@ -197,6 +195,12 @@ const MapScreen = ({route, navigation}) => {
                 onPress={() => {zoomMinus()}}
               >
                 <Text style={styles.plusMinusButtonText}>-</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.plusMinusButton}
+                onPress={() => {findMeOnMap()}}
+              >
+                <Text style={styles.plusMinusButtonText}>я</Text>
               </TouchableOpacity>
             </View>
           </View>
