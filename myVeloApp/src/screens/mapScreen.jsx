@@ -17,12 +17,14 @@ const MapScreen = ({route, navigation}) => {
     YaMap.init('8f655fe3-2522-4a4b-8212-616ec8071856');
     const zoomPlus = () => {
       this.mymap.getCameraPosition((position) => {
-        this.mymap.setZoom(position.zoom * 1.2, 0.5, Animation.SMOOTH);
+        const zoom = position.zoom;
+        this.mymap.setZoom(zoom<=15?zoom*1.2:zoom*1.05, 0.5, Animation.SMOOTH);
       })
     }
     const zoomMinus = () => {
       this.mymap.getCameraPosition((position) => {
-        this.mymap.setZoom(position.zoom / 1.2, 0.5, Animation.SMOOTH);
+        const zoom = position.zoom;
+        this.mymap.setZoom(zoom<=15?zoom/1.2:zoom/1.05, 0.5, Animation.SMOOTH);
       })
     }
     const [isRecordOn, changeIsRecordOn] = useState(-1);
@@ -38,6 +40,9 @@ const MapScreen = ({route, navigation}) => {
       changeIsRecordOn(-1);
       setPauseButtonText('ПОЕЗДКА');
       setStopButtonText('ЗАВЕРШЕНА');
+      console.log(arrayOfCoords);
+      console.log(arrIfAfterPause);
+      this.mymap.fitAllMarkers();
       postCoordsToDB(userToken, currentTime, arrayOfCoords).then((respStatus) => {
         if (respStatus === 'ERROR') {
           Alert.alert('Ошибка', 'Нет доступа к серверу');
@@ -77,7 +82,7 @@ const MapScreen = ({route, navigation}) => {
         const min = ('0' + Math.floor(currentTime / 60000) % 60).slice(-2);
         const sec = ('0' + Math.floor(currentTime / 1000) % 60).slice(-2);
         setStartButtonText(hours + ':' + min + ':' + sec);
-        if (currentTime % 2000 === 0) addCoord();
+        if (currentTime % 4000 === 0) addCoord();
       }
     }, [currentTime])
     useEffect(() => {
@@ -89,12 +94,17 @@ const MapScreen = ({route, navigation}) => {
         }, 100)
       } else {
         clearInterval(timerInterval)
-        if (isRecordOn === 0) setPauseButtonText('ПРОДОЛЖИТЬ');
+        if (isRecordOn === 0) {
+          setPauseButtonText('ПРОДОЛЖИТЬ');
+          setAfterPauseFlag(true);
+        }
       }
       return () => {clearInterval(timerInterval)}
     }, [isRecordOn]);
     const [arrayOfCoords, changeArrayOfCoords] = useState([]);
     const [forPolyline, changeCoordsForPolyline] = useState([]);
+    const [arrIfAfterPause, changeArrIfAfterPause] = useState([]);
+    const [afterPauseFlag, setAfterPauseFlag] = useState(false);
     class Coord {
       lat
       lon
@@ -108,8 +118,8 @@ const MapScreen = ({route, navigation}) => {
         (position) => {
             changeArrayOfCoords(arr => [...arr, [position.coords.latitude, position.coords.longitude]]);
             changeCoordsForPolyline(arr => [...arr, new Coord(position.coords.latitude, position.coords.longitude)]);
-            console.log(arrayOfCoords);
-            console.log(forPolyline);
+            changeArrIfAfterPause(arr => [...arr, afterPauseFlag]);
+            if (afterPauseFlag) setAfterPauseFlag(false);
         },
         (error) => {
             console.error(error);
@@ -128,30 +138,30 @@ const MapScreen = ({route, navigation}) => {
         {enableHighAccuracy: true, timeout: 15000, maximumAge: 10000, distanceFilter: 20,}
       );
     }
-    useEffect(() => {findMeOnMap()}, []);
-    // useEffect(() => { //replace it later
-    //   navigation.addListener('beforeRemove', (e) => {
-    //     e.preventDefault();
-    //     Alert.alert(
-    //       'Закрыть карту?',
-    //       'Уверены, что хотите выйти? Если вы начали запись маршрута, то она будет завершена, и данные не сохранятся',
-    //       [
-    //         {
-    //           text: 'Остаться',
-    //           style: 'cancel',
-    //           onPress: () => {},
-    //         },
-    //         {
-    //           text: 'Выйти',
-    //           style: 'destructive',
-    //           onPress: () => {
-    //             navigation.dispatch(e.data.action)
-    //           },
-    //         },
-    //       ]
-    //     );
-    //   });
-    // }, [navigation]);
+    useEffect(() => {findMeOnMap(0)}, []);
+    useEffect(() => { //replace it later
+      navigation.addListener('beforeRemove', (e) => {
+        e.preventDefault();
+        Alert.alert(
+          'Закрыть карту?',
+          'Уверены, что хотите выйти? Если вы начали запись маршрута, то она будет завершена, и данные не сохранятся',
+          [
+            {
+              text: 'Остаться',
+              style: 'cancel',
+              onPress: () => {},
+            },
+            {
+              text: 'Выйти',
+              style: 'destructive',
+              onPress: () => {
+                navigation.dispatch(e.data.action)
+              },
+            },
+          ]
+        );
+      });
+    }, [navigation]);
   
     return (
       <>
@@ -239,13 +249,12 @@ const styles = StyleSheet.create({
     containerMapScreen: {
         flex: 1,
         flexDirection: 'column',
-        justifyContent: 'center',
+        justifyContent: 'flex-start',
         alignItems: 'center',
     },
     mapContainer: {
-      flex: 1,
       width: '100%',
-      height: '70%',
+      height: '90%',
       flexDirection: 'row',
       justifyContent: 'flex-end',
       alignItems: 'center',
@@ -258,7 +267,7 @@ const styles = StyleSheet.create({
     containerPlusMinus: {
         paddingRight: 8,
         position: 'absolute',
-        height: 124,
+        height: 184,
         width: 'auto',
         flexDirection: 'column',
         justifyContent: 'space-between',
