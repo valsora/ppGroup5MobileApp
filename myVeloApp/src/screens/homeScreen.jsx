@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import requestLocPermission from '../common/requestLocationPermission';
 import { colors } from '../resources/colors';
+import { consts } from '../constants/consts';
 
 const HomeScreen = ({navigation}) => {
   const [tokenInputText, changeTokenInputText] = useState('');
@@ -36,7 +37,7 @@ const HomeScreen = ({navigation}) => {
         style={styles.tokenInput}
         onChangeText={(text) => {
           changeTokenInputText(text)
-          if (text.length === 10) {
+          if (text.length === consts.tokenLength) {
             changeDisabled(false)
             changeButtonColor(colors.prc)
           } else {
@@ -53,6 +54,7 @@ const HomeScreen = ({navigation}) => {
         style={styles.toMapButton}
         disabled={buttonDisabled}
         onPress={() => {
+          // navigation.navigate('Map', {userToken: tokenInputText}); //temp
           getIfTokenExists(tokenInputText).then((respStatus) => {
             if (respStatus === 'ERROR') {
               Alert.alert('Ошибка', 'Нет доступа к серверу');

@@ -6,10 +6,12 @@ import {
     TouchableOpacity,
     StyleSheet,
     Alert,
+    Image,
 } from 'react-native';
 import YaMap, { Animation, Polyline } from 'react-native-yamap';
 import Geolocation from 'react-native-geolocation-service';
 import { colors } from '../resources/colors';
+import { consts } from '../constants/consts';
 
 
 const MapScreen = ({route, navigation}) => {
@@ -18,13 +20,13 @@ const MapScreen = ({route, navigation}) => {
     const zoomPlus = () => {
       this.mymap.getCameraPosition((position) => {
         const zoom = position.zoom;
-        this.mymap.setZoom(zoom<=15?zoom*1.2:zoom*1.05, 0.5, Animation.SMOOTH);
+        this.mymap.setZoom(zoom <= consts.zoomLim ? zoom * consts.zoomB : zoom * consts.zoomS, consts.zoomDur, Animation.SMOOTH);
       })
     }
     const zoomMinus = () => {
       this.mymap.getCameraPosition((position) => {
         const zoom = position.zoom;
-        this.mymap.setZoom(zoom<=15?zoom/1.2:zoom/1.05, 0.5, Animation.SMOOTH);
+        this.mymap.setZoom(zoom <= consts.zoomLim ? zoom / consts.zoomB : zoom / consts.zoomS, consts.zoomDur, Animation.SMOOTH);
       })
     }
     const [isRecordOn, changeIsRecordOn] = useState(-1);
@@ -40,9 +42,8 @@ const MapScreen = ({route, navigation}) => {
       changeIsRecordOn(-1);
       setPauseButtonText('ПОЕЗДКА');
       setStopButtonText('ЗАВЕРШЕНА');
-      console.log(arrayOfCoords);
-      console.log(arrIfAfterPause);
-      this.mymap.fitAllMarkers();
+      console.log(arrayOfCoords); // temp
+      console.log(arrIfAfterPause); // temp
       postCoordsToDB(userToken, currentTime, arrayOfCoords).then((respStatus) => {
         if (respStatus === 'ERROR') {
           Alert.alert('Ошибка', 'Нет доступа к серверу');
@@ -76,19 +77,21 @@ const MapScreen = ({route, navigation}) => {
     const [startButtonText, setStartButtonText] = useState('СТАРТ');
     const [pauseButtonText, setPauseButtonText] = useState('ПАУЗА');
     const [stopButtonText, setStopButtonText] = useState('СТОП');
+    const [ifTracking, setIfTracking] = useState(false);
     useEffect(() => {
       if (currentTime !== 0) {
         const hours = ('0' + Math.floor(currentTime / 3600000)).slice(-2);
         const min = ('0' + Math.floor(currentTime / 60000) % 60).slice(-2);
         const sec = ('0' + Math.floor(currentTime / 1000) % 60).slice(-2);
         setStartButtonText(hours + ':' + min + ':' + sec);
-        if (currentTime % 4000 === 0) addCoord();
+        if (ifTracking) findMeOnMap(consts.camDurWhileTracking);
+        if (currentTime % consts.addCoordInterval === 0) addCoord();
       }
     }, [currentTime])
     useEffect(() => {
       let timerInterval;
       if (isRecordOn === 1) {
-        setPauseButtonText('ПАУЗА')
+        setPauseButtonText('ПАУЗА');
         timerInterval = setInterval(() => {
           setCurrentTime((t) => t + 100);
         }, 100)
@@ -127,10 +130,10 @@ const MapScreen = ({route, navigation}) => {
         {enableHighAccuracy: true, timeout: 15000, maximumAge: 10000, distanceFilter: 20,}
       );
     }
-    const findMeOnMap = () => {
+    const findMeOnMap = (duration) => {
       Geolocation.getCurrentPosition(
         (position) => {
-          this.mymap.setCenter(new Coord(position.coords.latitude, position.coords.longitude), 16, 0, 0, 0, Animation.SMOOTH);
+          this.mymap.setCenter(new Coord(position.coords.latitude, position.coords.longitude), consts.findMeZoom, 0, 0, duration, Animation.LINEAR);
         },
         (error) => {
           console.error(error);
@@ -155,7 +158,7 @@ const MapScreen = ({route, navigation}) => {
               text: 'Выйти',
               style: 'destructive',
               onPress: () => {
-                navigation.dispatch(e.data.action)
+                navigation.dispatch(e.data.action);
               },
             },
           ]
@@ -176,7 +179,10 @@ const MapScreen = ({route, navigation}) => {
               mapType='vector'
               showUserPosition={true}
               userLocationAccuracyFillColor={colors.pr300c + 'aa'}
+              userLocationIcon={require('../img/locicon.png')}
+              userLocationIconScale={0.1}
               nightMode={true}
+              tiltGesturesEnabled={false}
               initialRegion={{
                 lon: 42,
                 lat: 43,
@@ -193,24 +199,28 @@ const MapScreen = ({route, navigation}) => {
                 outlineWidth={1}
               />
             </YaMap>
-            <View style={styles.containerPlusMinus}>
+            <View style={styles.containerRightSideButtons}>
               <TouchableOpacity 
-                style={styles.plusMinusButton}
+                style={styles.rightSideButtons}
                 onPress={() => {zoomPlus()}}
               >
-                <Text style={styles.plusMinusButtonText}>+</Text>
+                <Text style={styles.rightSideButtonsText}>+</Text>
               </TouchableOpacity>
               <TouchableOpacity 
-                style={styles.plusMinusButton}
+                style={styles.rightSideButtons}
                 onPress={() => {zoomMinus()}}
               >
-                <Text style={styles.plusMinusButtonText}>-</Text>
+                <Text style={styles.rightSideButtonsText}>-</Text>
               </TouchableOpacity>
               <TouchableOpacity 
-                style={styles.plusMinusButton}
-                onPress={() => {findMeOnMap()}}
+                style={styles.rightSideButtons}
+                onPress={() => {findMeOnMap(0)}}
+                onLongPress={() => {setIfTracking(prev => !prev)}} // upgrade tracking later
               >
-                <Text style={styles.plusMinusButtonText}>я</Text>
+                <Image
+                  style={styles.findMeButtonImg}
+                  source={require('../img/locicon.png')}
+                />
               </TouchableOpacity>
             </View>
           </View>
@@ -264,7 +274,7 @@ const styles = StyleSheet.create({
         width: '100%',
         height: '100%',
     },
-    containerPlusMinus: {
+    containerRightSideButtons: {
         paddingRight: 8,
         position: 'absolute',
         height: 184,
@@ -313,20 +323,24 @@ const styles = StyleSheet.create({
       fontWeight: '300',
       color: colors.txc,
     },
-    plusMinusButton: {
+    rightSideButtons: {
         backgroundColor: colors.prc + 'cc',
         height: 56,
         width: 56,
-        borderRadius: 26,
+        borderRadius: 30,
         alignItems: 'center',
         justifyContent: 'center',
         borderColor: colors.acc,
         borderWidth: 1.5,
     },
-    plusMinusButtonText: {
+    rightSideButtonsText: {
         fontSize: 36,
         fontWeight: '200',
         color: colors.txc,
+    },
+    findMeButtonImg: {
+      height: '140%',
+      width: '140%',
     },
 })
 
